@@ -132,6 +132,46 @@ async def test_get_activity_accepts_string_id(app_with_activity_management, mock
 
 
 @pytest.mark.asyncio
+async def test_get_activity_includes_gps_start_position(app_with_activity_management, mock_garmin_client):
+    """Test get_activity surfaces start_latitude/start_longitude from summaryDTO.
+
+    Weather-lookup feature needs the GPS start point of outdoor activities.
+    get_activity_details() (the bulk per-second endpoint) is intentionally not
+    implemented, so this summary endpoint is the only cheap source of GPS.
+    """
+    mock_garmin_client.get_activity.return_value = MOCK_ACTIVITY_DETAILS
+
+    result = await app_with_activity_management.call_tool(
+        "get_activity",
+        {"activity_id": 12345678901}
+    )
+
+    data = json.loads(result[0][0].text)
+    assert data["start_latitude"] == 61.2295
+    assert data["start_longitude"] == 7.0991
+
+
+@pytest.mark.asyncio
+async def test_get_activity_omits_gps_when_not_present(app_with_activity_management, mock_garmin_client):
+    """Test get_activity omits start_latitude/start_longitude (not null) for indoor/GPS-less activities"""
+    mock_garmin_client.get_activity.return_value = {
+        "activityId": 1,
+        "activityName": "Styrke",
+        "activityTypeDTO": {"typeKey": "strength_training", "typeId": 13},
+        "summaryDTO": {"totalDistance": 0.0},
+    }
+
+    result = await app_with_activity_management.call_tool(
+        "get_activity",
+        {"activity_id": 1}
+    )
+
+    data = json.loads(result[0][0].text)
+    assert "start_latitude" not in data
+    assert "start_longitude" not in data
+
+
+@pytest.mark.asyncio
 async def test_set_activity_name_tool(app_with_activity_management, mock_garmin_client):
     """Test set_activity_name tool updates activity name"""
     activity_id = 12345678901

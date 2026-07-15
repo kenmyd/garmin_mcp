@@ -243,6 +243,10 @@ def register_tools(app):
                 "moving_duration_seconds": summary.get('movingDuration'),
                 "elapsed_duration_seconds": summary.get('elapsedDuration'),
 
+                # GPS start position (omitted for indoor/GPS-less activities)
+                "start_latitude": summary.get('startLatitude'),
+                "start_longitude": summary.get('startLongitude'),
+
                 # Distance and speed
                 "distance_meters": summary.get('distance'),
                 "avg_speed_mps": summary.get('averageSpeed'),
